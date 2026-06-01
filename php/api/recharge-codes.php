@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Recharge Codes API
  * GET          — list all codes (admin)
@@ -87,7 +87,7 @@ switch ($method) {
         // Create new code(s)
         $credits = floatval($body['credits'] ?? 0);
         $count = intval($body['count'] ?? 1);
-        $prefix = trim($body['prefix'] ?? 'TNSAT');
+        $prefix = trim($body['prefix'] ?? 'NETWORK SAT');
         if ($credits <= 0) jsonResponse(['error' => 'credits must be > 0'], 400);
         if ($count < 1 || $count > 100) jsonResponse(['error' => 'count must be 1-100'], 400);
 

@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Display-only URL masking.
  *
- * Visually replaces the real backend host (luccibyey.com.tn) with tnsat.net
+ * Visually replaces the real backend host (luccibyey.com.tn) with networksat.net
  * in any text shown to users (e.g. URL input fields, copied URLs).
  *
  * IMPORTANT: This is a UI-only transformation. Actual API calls and <img src>
@@ -11,7 +11,7 @@
  */
 
 const REAL_HOST = "luccibyey.com.tn";
-const DISPLAY_HOST = "tnsat.net";
+const DISPLAY_HOST = "networksat.net";
 
 export const maskUrl = (value: string | null | undefined): string => {
   if (!value) return "";

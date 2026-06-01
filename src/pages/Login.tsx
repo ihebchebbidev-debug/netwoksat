@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useLang } from "@/store/LangContext";
 import { setAuth } from "@/store/store";
@@ -96,7 +96,7 @@ const Login = () => {
             <Link to="/">
               <img
                 src={logo}
-                alt="TNSAT"
+                alt="NETWORK SAT"
                 className="h-20 sm:h-24 w-auto drop-shadow-[0_0_20px_hsl(228,76%,52%,0.2)] hover:drop-shadow-[0_0_30px_hsl(228,76%,52%,0.35)] transition-all duration-500"
               />
             </Link>

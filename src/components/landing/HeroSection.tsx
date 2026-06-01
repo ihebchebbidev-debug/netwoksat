@@ -1,4 +1,4 @@
-import { useLang } from "@/store/LangContext";
+﻿import { useLang } from "@/store/LangContext";
 import { Link } from "react-router-dom";
 import { ArrowRight, Shield, Handshake, Users, Globe, Zap, Star, TrendingUp } from "lucide-react";
 import heroImg from "@/assets/hero-new.jpg";
@@ -8,7 +8,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-[600px] md:min-h-[700px] flex items-center overflow-hidden" style={{ background: "hsl(228, 35%, 6%)" }}>
-      <img src={heroImg} alt="TNSAT Platform" className="absolute inset-0 w-full h-full object-cover opacity-20 scale-105" width={1920} height={1080} />
+      <img src={heroImg} alt="NETWORK SAT Platform" className="absolute inset-0 w-full h-full object-cover opacity-20 scale-105" width={1920} height={1080} />
       <div className="absolute inset-0 bg-gradient-to-br from-[hsl(228,35%,6%)] via-[hsl(228,35%,6%)/0.92] to-[hsl(260,50%,15%)/0.7]" />
       <div className="absolute inset-0 bg-gradient-to-t from-[hsl(228,35%,6%)] via-transparent to-transparent" />
       <div className="absolute top-20 end-[15%] w-[400px] h-[400px] rounded-full bg-primary/8 blur-[120px] animate-float" />

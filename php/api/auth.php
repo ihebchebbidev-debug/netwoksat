@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Auth API (MySQL) — supports admin, client, reseller
  */
@@ -21,7 +21,7 @@ if (!$email || !$password) {
 }
 
 // 1. Check Admin login (hardcoded)
-if ($email === 'admin@tnsat.net' && $password === 'admin123') {
+if ($email === 'admin@networksat.net' && $password === 'admin123') {
     jsonResponse(['success' => true, 'type' => 'admin']);
 }
 

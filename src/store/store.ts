@@ -1,4 +1,4 @@
-export interface Client {
+﻿export interface Client {
   id: string;
   name: string;
   email: string;
@@ -87,8 +87,8 @@ const KEYS = {
   deliveryTypes: "delivery_types",
   complaints: "complaints",
   notifications: "notifications",
-  lang: "tnsat_lang",
-  auth: "tnsat_auth",
+  lang: "networksat_lang",
+  auth: "networksat_auth",
 } as const;
 
 function get<T>(key: string): T[] {

@@ -1,5 +1,5 @@
--- ============================================================
--- TNSAT BEL TND — Consolidated Database Schema (MySQL)
+﻿-- ============================================================
+-- NETWORK SAT BEL TND — Consolidated Database Schema (MySQL)
 -- TND-only platform. All tables use the `tnsatbeltnd_` prefix.
 -- Run this once to set up (or RESET) the database from scratch.
 -- ============================================================

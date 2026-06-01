@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "@/store/LangContext";
 import { getAuth, setAuth } from "@/store/store";
@@ -1215,7 +1215,7 @@ const AdminDashboard = () => {
           {!sidebarCollapsed && (
             <div>
               <h2 className="font-display font-bold text-white text-sm">{t("adminDashboard")}</h2>
-              <p className="text-[10px] text-white/30">admin@tnsat.tn</p>
+              <p className="text-[10px] text-white/30">admin@networksat.net</p>
             </div>
           )}
         </div>
@@ -2853,7 +2853,7 @@ const AdminDashboard = () => {
                 <p>Les codes de recharge permettent aux <strong>revendeurs</strong> de s'ajouter du solde TND de manière autonome, sans vous contacter.</p>
                 <h4>Comment ça marche</h4>
                 <ol>
-                  <li>Vous générez des codes (ex: "TNSAT-A8K2M") avec un montant de TND prédéfini.</li>
+                  <li>Vous générez des codes (ex: "NETWORK SAT-A8K2M") avec un montant de TND prédéfini.</li>
                   <li>Vous donnez ces codes à vos revendeurs (en échange d'un paiement réel).</li>
                   <li>Le revendeur entre le code dans son espace → le solde TND sont ajoutés automatiquement à son solde.</li>
                 </ol>

@@ -1,37 +1,37 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://tnsat.tn/</loc>
+    <loc>https://networksat.net/</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://tnsat.tn/login</loc>
+    <loc>https://networksat.net/login</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://tnsat.tn/contact</loc>
+    <loc>https://networksat.net/contact</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://tnsat.tn/terms</loc>
+    <loc>https://networksat.net/terms</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://tnsat.tn/privacy</loc>
+    <loc>https://networksat.net/privacy</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://tnsat.tn/refund</loc>
+    <loc>https://networksat.net/refund</loc>
     <lastmod>2026-04-10</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>

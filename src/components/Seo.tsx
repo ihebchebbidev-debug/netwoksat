@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 
 interface SeoProps {
   title?: string;
@@ -12,12 +12,12 @@ interface SeoProps {
 const Seo = ({
   title,
   description,
-  canonical = "https://tnsat.tn",
+  canonical = "https://networksat.net",
   type = "website",
   image = "/og-image.png",
   schema,
 }: SeoProps) => {
-  const siteTitle = "TNSAT - IPTV Premium Tunisie";
+  const siteTitle = "NETWORK SAT - IPTV Premium Tunisie";
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
 
   useEffect(() => {

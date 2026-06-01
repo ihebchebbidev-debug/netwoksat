@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useLang } from "@/store/LangContext";
 import { apiSendContactMessage } from "@/utils/api";
 import { useToast } from "@/hooks/use-toast";
@@ -49,7 +49,7 @@ const Contact = () => {
   };
 
   const contactInfo = [
-    { icon: Mail, label: t("email"), value: "mail@tnsat.tn", href: "mailto:mail@tnsat.tn" },
+    { icon: Mail, label: t("email"), value: "mail@networksat.net", href: "mailto:mail@networksat.net" },
     { icon: Phone, label: t("contactPhone"), value: "+216 53 349 001", href: "tel:+21653349001" },
     { icon: MapPin, label: t("contactAddress"), value: "Tunisie", href: undefined },
     { icon: Clock, label: t("contactHours"), value: t("contactHoursValue"), href: undefined },
