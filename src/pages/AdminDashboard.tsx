@@ -3055,7 +3055,7 @@ const AdminDashboard = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Manage reseller Credits */}}
+      {/* Manage reseller Credits */}
       <AlertDialog open={!!resellerPointsTarget} onOpenChange={() => setResellerPointsTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
