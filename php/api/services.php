@@ -10,7 +10,6 @@ $method = $_SERVER['REQUEST_METHOD'];
 $id = $_GET['id'] ?? null;
 
 function parseServiceRow(&$row) {
-    $row['price_tnd'] = floatval($row['price_tnd']);
     $row['price_credits'] = floatval($row['price_credits']);
     $row['stock'] = $row['stock'] !== null ? intval($row['stock']) : null;
     $row['specifications'] = json_decode($row['specifications'] ?? 'null', true);
@@ -18,6 +17,8 @@ function parseServiceRow(&$row) {
     $row['category'] = $row['category'] ?? null;
     $row['sale_type'] = $row['sale_type'] ?? 'command';
     $row['visibility_mode'] = $row['visibility_mode'] ?? 'all';
+    // Note: price_tnd is not returned in API for credits-only system
+    unset($row['price_tnd']);
 }
 
 function normalizeSaleType($v) {
@@ -142,7 +143,6 @@ switch ($method) {
             $name = trim($body['name'] ?? '');
             $description = trim($body['description'] ?? '');
             $imageUrl = trim($body['image_url'] ?? '');
-            $priceTnd = floatval($body['price_tnd'] ?? 0);
             $priceCredits = floatval($body['price_credits'] ?? 0);
             $stock = isset($body['stock']) && $body['stock'] !== '' ? intval($body['stock']) : null;
             $deliveryTypeId = $body['delivery_type_id'] ?? null;
@@ -155,7 +155,7 @@ switch ($method) {
         if (!$name) jsonResponse(['error' => 'Name is required'], 400);
         
         $stmt = $db->prepare('INSERT INTO tnsatbeltnd_services (id, name, description, image_url, price_tnd, price_credits, stock, delivery_type_id, category, specifications, features, sale_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-        $stmt->execute([$id, $name, $description, $imageUrl, $priceTnd, $priceCredits, $stock, $deliveryTypeId ?: null, $category, $specifications, $features, $saleType]);
+        $stmt->execute([$id, $name, $description, $imageUrl, $priceCredits, $priceCredits, $stock, $deliveryTypeId ?: null, $category, $specifications, $features, $saleType]);
         
         jsonResponse(['id' => $id, 'name' => $name, 'image_url' => $imageUrl], 201);
         break;
@@ -168,7 +168,6 @@ switch ($method) {
         if (isset($_FILES['image'])) {
             $name = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
-            $priceTnd = floatval($_POST['price_tnd'] ?? 0);
             $priceCredits = floatval($_POST['price_credits'] ?? 0);
             $stock = isset($_POST['stock']) && $_POST['stock'] !== '' ? intval($_POST['stock']) : null;
             $deliveryTypeId = $_POST['delivery_type_id'] ?? null;
@@ -187,21 +186,22 @@ switch ($method) {
             $imageUrl = getUploadUrl($filename);
             
             $stmt = $db->prepare('UPDATE tnsatbeltnd_services SET name=?, description=?, image_url=?, price_tnd=?, price_credits=?, stock=?, delivery_type_id=?, category=?, specifications=?, features=?, sale_type=? WHERE id=?');
-            $stmt->execute([$name, $description, $imageUrl, $priceTnd, $priceCredits, $stock, $deliveryTypeId ?: null, $category, $specifications, $features, $saleType, $id]);
+            $stmt->execute([$name, $description, $imageUrl, $priceCredits, $priceCredits, $stock, $deliveryTypeId ?: null, $category, $specifications, $features, $saleType, $id]);
         } else {
             $body = getRequestBody();
             $specifications = isset($body['specifications']) ? json_encode($body['specifications']) : null;
             $features = isset($body['features']) ? json_encode($body['features']) : null;
             $category = isset($body['category']) && $body['category'] !== '' ? trim($body['category']) : null;
             $saleType = normalizeSaleType($body['sale_type'] ?? 'command');
+            $priceCredits = floatval($body['price_credits'] ?? 0);
             
             $stmt = $db->prepare('UPDATE tnsatbeltnd_services SET name=?, description=?, image_url=?, price_tnd=?, price_credits=?, stock=?, delivery_type_id=?, category=?, specifications=?, features=?, sale_type=? WHERE id=?');
             $stmt->execute([
                 trim($body['name'] ?? ''),
                 trim($body['description'] ?? ''),
                 trim($body['image_url'] ?? ''),
-                floatval($body['price_tnd'] ?? 0),
-                floatval($body['price_credits'] ?? 0),
+                $priceCredits,
+                $priceCredits,
                 isset($body['stock']) && $body['stock'] !== '' ? intval($body['stock']) : null,
                 ($body['delivery_type_id'] ?? null) ?: null,
                 $category,

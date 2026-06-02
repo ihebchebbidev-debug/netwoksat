@@ -32,7 +32,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
 -- 1. Clients
--- `credits` column stores the balance in TND (1 unit = 1 TND).
+-- `credits` column stores the account balance in system credits.
 -- ============================================================
 CREATE TABLE tnsatbeltnd_clients (
     id VARCHAR(64) PRIMARY KEY,
@@ -47,7 +47,7 @@ CREATE TABLE tnsatbeltnd_clients (
 
 -- ============================================================
 -- 2. Resellers (self-referencing for sub-resellers)
--- `credits` column stores the balance in TND.
+-- `credits` column stores the account balance in system credits.
 -- ============================================================
 CREATE TABLE tnsatbeltnd_resellers (
     id VARCHAR(64) PRIMARY KEY,
@@ -82,8 +82,9 @@ CREATE TABLE tnsatbeltnd_delivery_types (
 
 -- ============================================================
 -- 4. Services (products)
--- `price_credits` stores the price in TND. `price_tnd` is kept
--- for back-compat but the app reads `price_credits`.
+-- `price_credits` stores the service price in system credits.
+-- `price_tnd` is kept for database backwards-compatibility only.
+-- API only exposes price_credits (credits-only system).
 -- sale_type:
 --   'stock'   → instant key delivery from product_keys pool
 --   'command' → manual fulfillment by admin
@@ -111,7 +112,7 @@ CREATE TABLE tnsatbeltnd_services (
 
 -- ============================================================
 -- 5. Orders
--- `credits_used` stores the amount paid in TND.
+-- `credits_used` stores the amount of credits spent on the order.
 -- ============================================================
 CREATE TABLE tnsatbeltnd_orders (
     id VARCHAR(64) PRIMARY KEY,
@@ -209,7 +210,7 @@ CREATE TABLE tnsatbeltnd_contact_messages (
 
 -- ============================================================
 -- 10. Recharge Codes (admin creates, resellers redeem)
--- `credits` column stores the voucher value in TND.
+-- `credits` column stores the voucher value in system credits.
 -- ============================================================
 CREATE TABLE tnsatbeltnd_recharge_codes (
     id VARCHAR(64) PRIMARY KEY,

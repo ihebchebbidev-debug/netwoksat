@@ -212,7 +212,6 @@ export interface ApiService {
   name: string;
   description: string;
   image_url: string;
-  price_tnd: number;
   price_credits: number;
   stock: number | null;
   delivery_type_id: string | null;
@@ -273,14 +272,14 @@ export const apiSetServiceVisibility = (data: { service_id: string; mode: Servic
 
 export const apiCreateService = (data: {
   name: string; description: string; image_url: string;
-  price_tnd: number; price_credits: number; stock?: number | null; delivery_type_id?: string;
+  price_credits: number; stock?: number | null; delivery_type_id?: string;
   category?: string | null; specifications?: Record<string, string> | null; features?: string[] | null;
   sale_type?: "stock" | "command";
 }) => request<{ id: string }>("services.php", { method: "POST", body: JSON.stringify(data) });
 
 export const apiUpdateService = (id: string, data: {
   name: string; description: string; image_url: string;
-  price_tnd: number; price_credits: number; stock?: number | null; delivery_type_id?: string;
+  price_credits: number; stock?: number | null; delivery_type_id?: string;
   category?: string | null; specifications?: Record<string, string> | null; features?: string[] | null;
   sale_type?: "stock" | "command";
 }) => request<{ success: boolean }>(`services.php?id=${id}`, { method: "PUT", body: JSON.stringify(data) });
