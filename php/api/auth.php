@@ -28,7 +28,7 @@ if ($email === 'admin@networksat.net' && $password === 'admin123') {
 $db = getDB();
 
 // 2. Check Reseller login
-$stmt = $db->prepare('SELECT * FROM tnsatbeltnd_resellers WHERE email = ? AND password = ?');
+$stmt = $db->prepare('SELECT * FROM tnsat_resellers WHERE email = ? AND password = ?');
 $stmt->execute([$email, $password]);
 $reseller = $stmt->fetch();
 
@@ -50,7 +50,7 @@ if ($reseller) {
 }
 
 // 3. Check Client login
-$stmt = $db->prepare('SELECT * FROM tnsatbeltnd_clients WHERE email = ? AND password = ?');
+$stmt = $db->prepare('SELECT * FROM tnsat_clients WHERE email = ? AND password = ?');
 $stmt->execute([$email, $password]);
 $client = $stmt->fetch();
 

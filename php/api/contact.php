@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Contact Messages API (MySQL) — with pagination
  */
@@ -15,17 +15,17 @@ switch ($method) {
         $limit = isset($_GET['limit']) ? max(1, min(100, intval($_GET['limit']))) : 20;
 
         if ($page !== null) {
-            $countStmt = $db->query('SELECT COUNT(*) FROM tnsatbeltnd_contact_messages');
+            $countStmt = $db->query('SELECT COUNT(*) FROM tnsat_contact_messages');
             $total = intval($countStmt->fetchColumn());
 
             $offset = ($page - 1) * $limit;
-            $stmt = $db->prepare("SELECT * FROM tnsatbeltnd_contact_messages ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
+            $stmt = $db->prepare("SELECT * FROM tnsat_contact_messages ORDER BY created_at DESC LIMIT {$limit} OFFSET {$offset}");
             $stmt->execute();
             $messages = $stmt->fetchAll();
             foreach ($messages as &$m) { $m['is_read'] = intval($m['is_read']); }
             jsonResponse(['data' => $messages, 'total' => $total, 'page' => $page, 'limit' => $limit]);
         } else {
-            $stmt = $db->query('SELECT * FROM tnsatbeltnd_contact_messages ORDER BY created_at DESC');
+            $stmt = $db->query('SELECT * FROM tnsat_contact_messages ORDER BY created_at DESC');
             $messages = $stmt->fetchAll();
             foreach ($messages as &$m) { $m['is_read'] = intval($m['is_read']); }
             jsonResponse($messages);
@@ -51,7 +51,7 @@ switch ($method) {
 
         $db = getDB();
         $msgId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_contact_messages (id, name, email, subject, message) VALUES (?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_contact_messages (id, name, email, subject, message) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([$msgId, $name, $email, $subject, $message]);
 
         jsonResponse(['id' => $msgId, 'success' => true], 201);
@@ -60,7 +60,7 @@ switch ($method) {
     case 'PUT':
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_contact_messages SET is_read = 1 WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_contact_messages SET is_read = 1 WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;
@@ -68,7 +68,7 @@ switch ($method) {
     case 'DELETE':
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_contact_messages WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_contact_messages WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;

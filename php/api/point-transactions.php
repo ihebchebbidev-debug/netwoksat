@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Credit Transactions API (MySQL) — supports both clients and resellers
  * GET ?client_id=xxx or ?reseller_id=xxx  — list transactions (optional: &type=credit|debit, &from=YYYY-MM-DD, &to=YYYY-MM-DD)
@@ -15,7 +15,7 @@ switch ($method) {
         if (!$clientId && !$resellerId) jsonResponse(['error' => 'client_id or reseller_id required'], 400);
 
         $db = getDB();
-        $query = 'SELECT * FROM tnsatbeltnd_point_transactions WHERE ';
+        $query = 'SELECT * FROM tnsat_point_transactions WHERE ';
         $params = [];
 
         if ($clientId) {
@@ -66,7 +66,7 @@ switch ($method) {
         if (!array_key_exists('is_paid', $body)) jsonResponse(['error' => 'is_paid required'], 400);
         $isPaid = !empty($body['is_paid']) ? 1 : 0;
         $db = getDB();
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_point_transactions SET is_paid = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_point_transactions SET is_paid = ? WHERE id = ?');
         $stmt->execute([$isPaid, $id]);
         jsonResponse(['success' => true, 'is_paid' => $isPaid]);
         break;

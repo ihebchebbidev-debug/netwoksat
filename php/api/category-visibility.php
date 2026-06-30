@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Per-category visibility (admin)
  *
@@ -18,14 +18,14 @@ switch ($method) {
         if (!$categoryId) jsonResponse(['error' => 'category_id required'], 400);
         $db = getDB();
 
-        $stmt = $db->prepare('SELECT visibility_mode FROM tnsatbeltnd_categories WHERE id = ?');
+        $stmt = $db->prepare('SELECT visibility_mode FROM tnsat_categories WHERE id = ?');
         $stmt->execute([$categoryId]);
         $cat = $stmt->fetch();
         if (!$cat) jsonResponse(['error' => 'Category not found'], 404);
 
         $stmt = $db->prepare('SELECT v.reseller_id, r.name, r.email
-                              FROM tnsatbeltnd_reseller_category_visibility v
-                              JOIN tnsatbeltnd_resellers r ON r.id = v.reseller_id
+                              FROM tnsat_reseller_category_visibility v
+                              JOIN tnsat_resellers r ON r.id = v.reseller_id
                               WHERE v.category_id = ?
                               ORDER BY r.name ASC');
         $stmt->execute([$categoryId]);
@@ -51,14 +51,14 @@ switch ($method) {
         $db = getDB();
         $db->beginTransaction();
         try {
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_categories SET visibility_mode = ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_categories SET visibility_mode = ? WHERE id = ?');
             $stmt->execute([$mode, $categoryId]);
 
-            $del = $db->prepare('DELETE FROM tnsatbeltnd_reseller_category_visibility WHERE category_id = ?');
+            $del = $db->prepare('DELETE FROM tnsat_reseller_category_visibility WHERE category_id = ?');
             $del->execute([$categoryId]);
 
             if ($mode !== 'all' && count($resellerIds) > 0) {
-                $ins = $db->prepare('INSERT IGNORE INTO tnsatbeltnd_reseller_category_visibility (category_id, reseller_id) VALUES (?, ?)');
+                $ins = $db->prepare('INSERT IGNORE INTO tnsat_reseller_category_visibility (category_id, reseller_id) VALUES (?, ?)');
                 foreach ($resellerIds as $rid) {
                     if (is_string($rid) && $rid !== '') $ins->execute([$categoryId, $rid]);
                 }

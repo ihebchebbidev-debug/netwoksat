@@ -14,7 +14,7 @@ $action = $_GET['action'] ?? null;
 switch ($method) {
     case 'GET':
         $db = getDB();
-        $stmt = $db->query('SELECT rc.*, r.name as reseller_name FROM tnsatbeltnd_recharge_codes rc LEFT JOIN tnsatbeltnd_resellers r ON rc.used_by_reseller_id = r.id ORDER BY rc.created_at DESC LIMIT 500');
+        $stmt = $db->query('SELECT rc.*, r.name as reseller_name FROM tnsat_recharge_codes rc LEFT JOIN tnsat_resellers r ON rc.used_by_reseller_id = r.id ORDER BY rc.created_at DESC LIMIT 500');
         $rows = $stmt->fetchAll();
         foreach ($rows as &$r) {
             $r['credits'] = floatval($r['credits']);
@@ -35,7 +35,7 @@ switch ($method) {
 
             $db->beginTransaction();
             try {
-                $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_recharge_codes WHERE code = ? AND is_used = 0 FOR UPDATE');
+                $stmt = $db->prepare('SELECT * FROM tnsat_recharge_codes WHERE code = ? AND is_used = 0 FOR UPDATE');
                 $stmt->execute([$code]);
                 $rc = $stmt->fetch();
                 if (!$rc) {
@@ -44,22 +44,22 @@ switch ($method) {
                 }
 
                 // Mark code as used
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_recharge_codes SET is_used = 1, used_by_reseller_id = ?, used_at = NOW() WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_recharge_codes SET is_used = 1, used_by_reseller_id = ?, used_at = NOW() WHERE id = ?');
                 $stmt->execute([$resellerId, $rc['id']]);
 
                 // Add credits to reseller
                 $credits = floatval($rc['credits']);
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_resellers SET credits = credits + ? WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_resellers SET credits = credits + ? WHERE id = ?');
                 $stmt->execute([$credits, $resellerId]);
 
                 // Get new balance
-                $stmt = $db->prepare('SELECT credits FROM tnsatbeltnd_resellers WHERE id = ?');
+                $stmt = $db->prepare('SELECT credits FROM tnsat_resellers WHERE id = ?');
                 $stmt->execute([$resellerId]);
                 $newBalance = floatval($stmt->fetchColumn());
 
                 // Log transaction
                 $txId = bin2hex(random_bytes(16));
-                $stmt = $db->prepare('INSERT INTO tnsatbeltnd_point_transactions (id, reseller_id, type, amount, balance_after, description) VALUES (?, ?, "credit", ?, ?, ?)');
+                $stmt = $db->prepare('INSERT INTO tnsat_point_transactions (id, reseller_id, type, amount, balance_after, description) VALUES (?, ?, "credit", ?, ?, ?)');
                 $stmt->execute([$txId, $resellerId, $credits, $newBalance, "Recharge par code: $code"]);
 
                 $db->commit();
@@ -75,7 +75,7 @@ switch ($method) {
             // Check if code is valid without redeeming
             $code = trim($body['code'] ?? '');
             if (!$code) jsonResponse(['error' => 'code required'], 400);
-            $stmt = $db->prepare('SELECT credits, is_used FROM tnsatbeltnd_recharge_codes WHERE code = ?');
+            $stmt = $db->prepare('SELECT credits, is_used FROM tnsat_recharge_codes WHERE code = ?');
             $stmt->execute([$code]);
             $rc = $stmt->fetch();
             if (!$rc) jsonResponse(['valid' => false, 'error' => 'Code introuvable']);
@@ -92,7 +92,7 @@ switch ($method) {
         if ($count < 1 || $count > 100) jsonResponse(['error' => 'count must be 1-100'], 400);
 
         $codes = [];
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_recharge_codes (id, code, credits) VALUES (?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_recharge_codes (id, code, credits) VALUES (?, ?, ?)');
         for ($i = 0; $i < $count; $i++) {
             $id = bin2hex(random_bytes(16));
             $code = strtoupper($prefix) . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
@@ -106,7 +106,7 @@ switch ($method) {
         $id = $_GET['id'] ?? null;
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_recharge_codes WHERE id = ? AND is_used = 0');
+        $stmt = $db->prepare('DELETE FROM tnsat_recharge_codes WHERE id = ? AND is_used = 0');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;

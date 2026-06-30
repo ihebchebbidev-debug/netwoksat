@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Reseller-specific service price overrides (admin)
  *
@@ -23,15 +23,15 @@ switch ($method) {
         $resellerId = $_GET['reseller_id'] ?? null;
         if ($serviceId) {
             $stmt = $db->prepare('SELECT p.service_id, p.reseller_id, p.price_credits, r.name AS reseller_name, r.email AS reseller_email
-                                  FROM tnsatbeltnd_reseller_service_prices p
-                                  JOIN tnsatbeltnd_resellers r ON r.id = p.reseller_id
+                                  FROM tnsat_reseller_service_prices p
+                                  JOIN tnsat_resellers r ON r.id = p.reseller_id
                                   WHERE p.service_id = ?
                                   ORDER BY r.name ASC');
             $stmt->execute([$serviceId]);
         } elseif ($resellerId) {
             $stmt = $db->prepare('SELECT p.service_id, p.reseller_id, p.price_credits, s.name AS service_name
-                                  FROM tnsatbeltnd_reseller_service_prices p
-                                  JOIN tnsatbeltnd_services s ON s.id = p.service_id
+                                  FROM tnsat_reseller_service_prices p
+                                  JOIN tnsat_services s ON s.id = p.service_id
                                   WHERE p.reseller_id = ?');
             $stmt->execute([$resellerId]);
         } else {
@@ -50,7 +50,7 @@ switch ($method) {
         if ($action === 'reset_all') {
             $serviceId = $body['service_id'] ?? null;
             if (!$serviceId) jsonResponse(['error' => 'service_id required'], 400);
-            $stmt = $db->prepare('DELETE FROM tnsatbeltnd_reseller_service_prices WHERE service_id = ?');
+            $stmt = $db->prepare('DELETE FROM tnsat_reseller_service_prices WHERE service_id = ?');
             $stmt->execute([$serviceId]);
             jsonResponse(['success' => true, 'deleted' => $stmt->rowCount()]);
         }
@@ -63,7 +63,7 @@ switch ($method) {
         }
         if ($price < 0) jsonResponse(['error' => 'price_credits must be >= 0'], 400);
 
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_reseller_service_prices (service_id, reseller_id, price_credits)
+        $stmt = $db->prepare('INSERT INTO tnsat_reseller_service_prices (service_id, reseller_id, price_credits)
                               VALUES (?, ?, ?)
                               ON DUPLICATE KEY UPDATE price_credits = VALUES(price_credits)');
         $stmt->execute([$serviceId, $resellerId, $price]);
@@ -76,7 +76,7 @@ switch ($method) {
         $resellerId = $_GET['reseller_id'] ?? null;
         if (!$serviceId || !$resellerId) jsonResponse(['error' => 'service_id and reseller_id required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_reseller_service_prices WHERE service_id = ? AND reseller_id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_reseller_service_prices WHERE service_id = ? AND reseller_id = ?');
         $stmt->execute([$serviceId, $resellerId]);
         jsonResponse(['success' => true]);
         break;

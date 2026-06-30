@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Complaints API (MySQL) — with pagination, supports client & reseller
  */
@@ -17,11 +17,11 @@ switch ($method) {
         $limit = isset($_GET['limit']) ? max(1, min(100, intval($_GET['limit']))) : 20;
 
         $baseFrom = '
-            FROM tnsatbeltnd_complaints comp
-            LEFT JOIN tnsatbeltnd_orders o ON comp.order_id = o.id
-            LEFT JOIN tnsatbeltnd_services s ON o.service_id = s.id
-            LEFT JOIN tnsatbeltnd_clients c ON comp.client_id = c.id
-            LEFT JOIN tnsatbeltnd_resellers r ON comp.reseller_id = r.id
+            FROM tnsat_complaints comp
+            LEFT JOIN tnsat_orders o ON comp.order_id = o.id
+            LEFT JOIN tnsat_services s ON o.service_id = s.id
+            LEFT JOIN tnsat_clients c ON comp.client_id = c.id
+            LEFT JOIN tnsat_resellers r ON comp.reseller_id = r.id
         ';
         $selectCols = 'comp.*, o.service_id, s.name as service_name, c.name as client_name, c.email as client_email, r.name as reseller_name, r.email as reseller_email, o.credentials, o.status as order_status';
 
@@ -68,17 +68,17 @@ switch ($method) {
         }
         
         $db = getDB();
-        $stmt = $db->prepare('SELECT id FROM tnsatbeltnd_complaints WHERE order_id = ? AND status IN (?, ?)');
+        $stmt = $db->prepare('SELECT id FROM tnsat_complaints WHERE order_id = ? AND status IN (?, ?)');
         $stmt->execute([$orderId, 'open', 'in_review']);
         if ($stmt->fetch()) {
             jsonResponse(['error' => 'An active complaint already exists for this order'], 400);
         }
         
         $compId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_complaints (id, order_id, client_id, reseller_id, reason, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_complaints (id, order_id, client_id, reseller_id, reason, message, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$compId, $orderId, $clientId, $resellerId, $reason, $message, 'open']);
         
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_orders SET status = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_orders SET status = ? WHERE id = ?');
         $stmt->execute(['disputed', $orderId]);
         
         jsonResponse(['id' => $compId, 'status' => 'open'], 201);
@@ -106,19 +106,19 @@ switch ($method) {
         }
         
         $params[] = $id;
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_complaints SET ' . implode(', ', $updates) . ' WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_complaints SET ' . implode(', ', $updates) . ' WHERE id = ?');
         $stmt->execute($params);
         
-        $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_complaints WHERE id = ?');
+        $stmt = $db->prepare('SELECT * FROM tnsat_complaints WHERE id = ?');
         $stmt->execute([$id]);
         $complaint = $stmt->fetch();
         
         if ($complaint) {
             if ($newCredentials && !empty($newCredentials)) {
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_orders SET credentials = ?, status = ? WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_orders SET credentials = ?, status = ? WHERE id = ?');
                 $stmt->execute([json_encode($newCredentials), 'fulfilled', $complaint['order_id']]);
             } elseif ($status === 'resolved') {
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_orders SET status = ? WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_orders SET status = ? WHERE id = ?');
                 $stmt->execute(['resolved', $complaint['order_id']]);
             }
             
@@ -131,7 +131,7 @@ switch ($method) {
             }
             
             $notifId = bin2hex(random_bytes(16));
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, order_id, complaint_id, is_read) VALUES (?, ?, ?, ?, ?, ?, ?, 0)');
+            $stmt = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, order_id, complaint_id, is_read) VALUES (?, ?, ?, ?, ?, ?, ?, 0)');
             $stmt->execute([$notifId, $complaint['client_id'], $complaint['reseller_id'], $notifType, $notifMessage, $complaint['order_id'], $id]);
         }
         

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Notifications API (MySQL) — supports client_id and reseller_id
  */
@@ -22,7 +22,7 @@ switch ($method) {
         // pending reset requests when the queue gets long.
         if ($admin) {
             $stmt = $db->query(
-                "SELECT * FROM tnsatbeltnd_notifications
+                "SELECT * FROM tnsat_notifications
                  WHERE client_id IS NULL AND reseller_id IS NULL
                    AND (
                      is_read = 0
@@ -32,7 +32,7 @@ switch ($method) {
             );
             $unread = $stmt->fetchAll();
             $stmt = $db->query(
-                "SELECT * FROM tnsatbeltnd_notifications
+                "SELECT * FROM tnsat_notifications
                  WHERE client_id IS NULL AND reseller_id IS NULL
                    AND is_read = 1
                    AND NOT (type = 'reset_request' AND message NOT LIKE '%[ACT:approved]%' AND message NOT LIKE '%[ACT:cancelled]%')
@@ -45,10 +45,10 @@ switch ($method) {
         if (!$clientId && !$resellerId) jsonResponse(['error' => 'client_id or reseller_id required'], 400);
         
         if ($clientId) {
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_notifications WHERE client_id = ? ORDER BY created_at DESC LIMIT 50');
+            $stmt = $db->prepare('SELECT * FROM tnsat_notifications WHERE client_id = ? ORDER BY created_at DESC LIMIT 50');
             $stmt->execute([$clientId]);
         } else {
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_notifications WHERE reseller_id = ? ORDER BY created_at DESC LIMIT 50');
+            $stmt = $db->prepare('SELECT * FROM tnsat_notifications WHERE reseller_id = ? ORDER BY created_at DESC LIMIT 50');
             $stmt->execute([$resellerId]);
         }
         jsonResponse($stmt->fetchAll());
@@ -64,7 +64,7 @@ switch ($method) {
         if (!$type || !$message) jsonResponse(['error' => 'type and message required'], 400);
         $db = getDB();
         $notifId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, 0)');
+        $stmt = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, 0)');
         $stmt->execute([$notifId, $targetClientId, $targetResellerId, $type, $message, $orderId]);
         jsonResponse(['success' => true, 'id' => $notifId], 201);
         break;
@@ -74,10 +74,10 @@ switch ($method) {
         
         if ($action === 'read_all') {
             if ($clientId) {
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_notifications SET is_read = 1 WHERE client_id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_notifications SET is_read = 1 WHERE client_id = ?');
                 $stmt->execute([$clientId]);
             } elseif ($resellerId) {
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_notifications SET is_read = 1 WHERE reseller_id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_notifications SET is_read = 1 WHERE reseller_id = ?');
                 $stmt->execute([$resellerId]);
             } else {
                 jsonResponse(['error' => 'client_id or reseller_id required'], 400);
@@ -93,23 +93,23 @@ switch ($method) {
 
             if ($hasNote && $outcome === null) {
                 $note = trim(substr((string)$body['reseller_note'], 0, 2000));
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_notifications SET reseller_note = ? WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_notifications SET reseller_note = ? WHERE id = ?');
                 $stmt->execute([$note === '' ? null : $note, $id]);
                 jsonResponse(['success' => true]);
             }
 
             if ($outcome === 'approved' || $outcome === 'cancelled') {
-                $stmt = $db->prepare('SELECT message FROM tnsatbeltnd_notifications WHERE id = ?');
+                $stmt = $db->prepare('SELECT message FROM tnsat_notifications WHERE id = ?');
                 $stmt->execute([$id]);
                 $row = $stmt->fetch();
                 $msg = $row ? (string)$row['message'] : '';
                 // Strip any previous [ACT:...] marker, then append the new one.
                 $msg = preg_replace('/\s*\[ACT:(approved|cancelled)\]/', '', $msg);
                 $msg = rtrim($msg) . "\n[ACT:{$outcome}]";
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_notifications SET is_read = 1, message = ? WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_notifications SET is_read = 1, message = ? WHERE id = ?');
                 $stmt->execute([$msg, $id]);
             } else {
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_notifications SET is_read = 1 WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_notifications SET is_read = 1 WHERE id = ?');
                 $stmt->execute([$id]);
             }
             jsonResponse(['success' => true]);

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Resellers API (MySQL) — with batch delete, pagination, credit tx logging
  * Fields: id, name, email, password, credits, can_add_resellers, parent_reseller_id, note, level, country, currency, is_active, created_at
@@ -25,7 +25,7 @@ switch ($method) {
     case 'GET':
         $db = getDB();
         if ($id) {
-            $stmt = $db->prepare("SELECT {$cols}, p.name as parent_name FROM tnsatbeltnd_resellers r LEFT JOIN tnsatbeltnd_resellers p ON r.parent_reseller_id = p.id WHERE r.id = ?");
+            $stmt = $db->prepare("SELECT {$cols}, p.name as parent_name FROM tnsat_resellers r LEFT JOIN tnsat_resellers p ON r.parent_reseller_id = p.id WHERE r.id = ?");
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             if (!$row) jsonResponse(['error' => 'Not found'], 404);
@@ -55,18 +55,18 @@ switch ($method) {
             }
 
             if ($page !== null) {
-                $countStmt = $db->prepare("SELECT COUNT(*) FROM tnsatbeltnd_resellers r{$where}");
+                $countStmt = $db->prepare("SELECT COUNT(*) FROM tnsat_resellers r{$where}");
                 $countStmt->execute($params);
                 $total = intval($countStmt->fetchColumn());
 
                 $offset = ($page - 1) * $limit;
-                $stmt = $db->prepare("SELECT {$cols}, p.name as parent_name FROM tnsatbeltnd_resellers r LEFT JOIN tnsatbeltnd_resellers p ON r.parent_reseller_id = p.id{$where} ORDER BY r.created_at DESC LIMIT {$limit} OFFSET {$offset}");
+                $stmt = $db->prepare("SELECT {$cols}, p.name as parent_name FROM tnsat_resellers r LEFT JOIN tnsat_resellers p ON r.parent_reseller_id = p.id{$where} ORDER BY r.created_at DESC LIMIT {$limit} OFFSET {$offset}");
                 $stmt->execute($params);
                 $rows = $stmt->fetchAll();
                 foreach ($rows as &$r) castRow($r);
                 jsonResponse(['data' => $rows, 'total' => $total, 'page' => $page, 'limit' => $limit]);
             } else {
-                $stmt = $db->prepare("SELECT {$cols}, p.name as parent_name FROM tnsatbeltnd_resellers r LEFT JOIN tnsatbeltnd_resellers p ON r.parent_reseller_id = p.id{$where} ORDER BY r.created_at DESC");
+                $stmt = $db->prepare("SELECT {$cols}, p.name as parent_name FROM tnsat_resellers r LEFT JOIN tnsat_resellers p ON r.parent_reseller_id = p.id{$where} ORDER BY r.created_at DESC");
                 $stmt->execute($params);
                 $rows = $stmt->fetchAll();
                 foreach ($rows as &$r) castRow($r);
@@ -83,7 +83,7 @@ switch ($method) {
             if (empty($ids) || !is_array($ids)) jsonResponse(['error' => 'ids array required'], 400);
             $db = getDB();
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $stmt = $db->prepare("DELETE FROM tnsatbeltnd_resellers WHERE id IN ({$placeholders})");
+            $stmt = $db->prepare("DELETE FROM tnsat_resellers WHERE id IN ({$placeholders})");
             $stmt->execute($ids);
             jsonResponse(['success' => true, 'deleted' => $stmt->rowCount()]);
             break;
@@ -94,7 +94,7 @@ switch ($method) {
             if (empty($ids) || !is_array($ids)) jsonResponse(['error' => 'ids array required'], 400);
             $db = getDB();
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $stmt = $db->prepare("UPDATE tnsatbeltnd_resellers SET is_active = NOT is_active WHERE id IN ({$placeholders})");
+            $stmt = $db->prepare("UPDATE tnsat_resellers SET is_active = NOT is_active WHERE id IN ({$placeholders})");
             $stmt->execute($ids);
             jsonResponse(['success' => true, 'updated' => $stmt->rowCount()]);
             break;
@@ -123,14 +123,14 @@ switch ($method) {
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id FROM tnsatbeltnd_resellers WHERE email = ?');
+        $stmt = $db->prepare('SELECT id FROM tnsat_resellers WHERE email = ?');
         $stmt->execute([$email]);
         if ($stmt->fetch()) {
             jsonResponse(['error' => 'Email already exists'], 409);
         }
 
         $id = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_resellers (id, name, email, password, credits, can_add_resellers, parent_reseller_id, note, level, country, currency, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_resellers (id, name, email, password, credits, can_add_resellers, parent_reseller_id, note, level, country, currency, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$id, $name, $email, $password, $credits, $canAddResellers, $parentResellerId, $note ?: null, $level, $country, $currency, $imageUrl ?: null]);
 
         jsonResponse(['id' => $id], 201);
@@ -147,24 +147,24 @@ switch ($method) {
             $pointNote = trim($body['note'] ?? '');
             $paidByReseller = !empty($body['paid_by_reseller']);
             if ($credits <= 0) jsonResponse(['error' => 'Invalid credits'], 400);
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_resellers SET credits = credits + ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_resellers SET credits = credits + ? WHERE id = ?');
             $stmt->execute([$credits, $id]);
 
-            $stmt = $db->prepare('SELECT credits FROM tnsatbeltnd_resellers WHERE id = ?');
+            $stmt = $db->prepare('SELECT credits FROM tnsat_resellers WHERE id = ?');
             $stmt->execute([$id]);
             $updated = $stmt->fetch();
             $desc = 'Crédits ajoutés par admin';
             if ($pointNote) $desc .= ' — ' . $pointNote;
             if ($paidByReseller) $desc .= ' (payé par reseller)';
             $txId = bin2hex(random_bytes(16));
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_point_transactions (id, reseller_id, type, amount, balance_after, description, is_paid) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            $stmt = $db->prepare('INSERT INTO tnsat_point_transactions (id, reseller_id, type, amount, balance_after, description, is_paid) VALUES (?, ?, ?, ?, ?, ?, ?)');
             $stmt->execute([$txId, $id, 'credit', $credits, floatval($updated['credits']), $desc, $paidByReseller ? 1 : 0]);
 
             jsonResponse(['success' => true]);
         } elseif ($action === 'remove_points' || $action === 'remove_credits') {
             $credits = floatval($body['credits'] ?? $body['points'] ?? 0);
             if ($credits <= 0) jsonResponse(['error' => 'Invalid credits'], 400);
-            $stmt = $db->prepare('SELECT credits FROM tnsatbeltnd_resellers WHERE id = ?');
+            $stmt = $db->prepare('SELECT credits FROM tnsat_resellers WHERE id = ?');
             $stmt->execute([$id]);
             $current = $stmt->fetch();
             if (!$current) jsonResponse(['error' => 'Reseller not found'], 404);
@@ -172,35 +172,35 @@ switch ($method) {
             $toRemove = min($credits, $currentCredits);
             if ($toRemove <= 0) jsonResponse(['error' => 'No credits to remove'], 400);
 
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_resellers SET credits = credits - ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_resellers SET credits = credits - ? WHERE id = ?');
             $stmt->execute([$toRemove, $id]);
 
-            $stmt = $db->prepare('SELECT credits FROM tnsatbeltnd_resellers WHERE id = ?');
+            $stmt = $db->prepare('SELECT credits FROM tnsat_resellers WHERE id = ?');
             $stmt->execute([$id]);
             $updated = $stmt->fetch();
             $txId = bin2hex(random_bytes(16));
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_point_transactions (id, reseller_id, type, amount, balance_after, description) VALUES (?, ?, ?, ?, ?, ?)');
+            $stmt = $db->prepare('INSERT INTO tnsat_point_transactions (id, reseller_id, type, amount, balance_after, description) VALUES (?, ?, ?, ?, ?, ?)');
             $stmt->execute([$txId, $id, 'debit', $toRemove, floatval($updated['credits']), 'Crédits retirés par admin']);
 
             jsonResponse(['success' => true]);
         } elseif ($action === 'empty_credits' || $action === 'empty_points') {
-            $stmt = $db->prepare('SELECT credits FROM tnsatbeltnd_resellers WHERE id = ?');
+            $stmt = $db->prepare('SELECT credits FROM tnsat_resellers WHERE id = ?');
             $stmt->execute([$id]);
             $current = $stmt->fetch();
             if (!$current) jsonResponse(['error' => 'Reseller not found'], 404);
             $currentCredits = floatval($current['credits']);
 
             if ($currentCredits > 0) {
-                $stmt = $db->prepare('UPDATE tnsatbeltnd_resellers SET credits = 0 WHERE id = ?');
+                $stmt = $db->prepare('UPDATE tnsat_resellers SET credits = 0 WHERE id = ?');
                 $stmt->execute([$id]);
                 $txId = bin2hex(random_bytes(16));
-                $stmt = $db->prepare('INSERT INTO tnsatbeltnd_point_transactions (id, reseller_id, type, amount, balance_after, description) VALUES (?, ?, ?, ?, ?, ?)');
+                $stmt = $db->prepare('INSERT INTO tnsat_point_transactions (id, reseller_id, type, amount, balance_after, description) VALUES (?, ?, ?, ?, ?, ?)');
                 $stmt->execute([$txId, $id, 'debit', $currentCredits, 0, 'Solde vidé par admin']);
             }
 
             jsonResponse(['success' => true]);
         } elseif ($action === 'toggle_active') {
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_resellers SET is_active = NOT is_active WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_resellers SET is_active = NOT is_active WHERE id = ?');
             $stmt->execute([$id]);
             jsonResponse(['success' => true]);
         } elseif ($action === 'self_update') {
@@ -218,7 +218,7 @@ switch ($method) {
             }
 
             // Verify current password
-            $stmt = $db->prepare('SELECT password FROM tnsatbeltnd_resellers WHERE id = ?');
+            $stmt = $db->prepare('SELECT password FROM tnsat_resellers WHERE id = ?');
             $stmt->execute([$id]);
             $current = $stmt->fetch();
             if (!$current) jsonResponse(['error' => 'Reseller not found'], 404);
@@ -227,7 +227,7 @@ switch ($method) {
             }
 
             // Check email uniqueness
-            $stmt = $db->prepare('SELECT id FROM tnsatbeltnd_resellers WHERE email = ? AND id != ?');
+            $stmt = $db->prepare('SELECT id FROM tnsat_resellers WHERE email = ? AND id != ?');
             $stmt->execute([$email, $id]);
             if ($stmt->fetch()) {
                 jsonResponse(['error' => 'Email already exists'], 409);
@@ -244,7 +244,7 @@ switch ($method) {
                 $params[] = trim($body['image_url']) ?: null;
             }
             $params[] = $id;
-            $stmt = $db->prepare("UPDATE tnsatbeltnd_resellers SET {$updates} WHERE id = ?");
+            $stmt = $db->prepare("UPDATE tnsat_resellers SET {$updates} WHERE id = ?");
             $stmt->execute($params);
             jsonResponse(['success' => true]);
         } else {
@@ -266,13 +266,13 @@ switch ($method) {
                 jsonResponse(['error' => 'Invalid email format'], 400);
             }
 
-            $stmt = $db->prepare('SELECT id FROM tnsatbeltnd_resellers WHERE email = ? AND id != ?');
+            $stmt = $db->prepare('SELECT id FROM tnsat_resellers WHERE email = ? AND id != ?');
             $stmt->execute([$email, $id]);
             if ($stmt->fetch()) {
                 jsonResponse(['error' => 'Email already exists'], 409);
             }
 
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_resellers SET name = ?, email = ?, password = ?, credits = ?, can_add_resellers = ?, note = ?, level = ?, country = ?, image_url = ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_resellers SET name = ?, email = ?, password = ?, credits = ?, can_add_resellers = ?, note = ?, level = ?, country = ?, image_url = ? WHERE id = ?');
             $stmt->execute([$name, $email, $password, $credits, $canAddResellers, $note ?: null, $level, $country, $imageUrl ?: null, $id]);
             jsonResponse(['success' => true]);
         }
@@ -281,7 +281,7 @@ switch ($method) {
     case 'DELETE':
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_resellers WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_resellers WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;

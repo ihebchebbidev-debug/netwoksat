@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Settings API — key/value store for app configuration
  * GET    → returns all settings (or ?key=xxx for one)
@@ -14,7 +14,7 @@ switch ($method) {
     case 'GET':
         $key = $_GET['key'] ?? null;
         if ($key) {
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_settings WHERE setting_key = ?');
+            $stmt = $db->prepare('SELECT * FROM tnsat_settings WHERE setting_key = ?');
             $stmt->execute([$key]);
             $row = $stmt->fetch();
             if ($row) {
@@ -23,7 +23,7 @@ switch ($method) {
                 jsonResponse(['error' => 'Setting not found'], 404);
             }
         } else {
-            $stmt = $db->query('SELECT * FROM tnsatbeltnd_settings ORDER BY setting_key');
+            $stmt = $db->query('SELECT * FROM tnsat_settings ORDER BY setting_key');
             $rows = $stmt->fetchAll();
             $result = [];
             foreach ($rows as $r) {
@@ -42,14 +42,14 @@ switch ($method) {
             jsonResponse(['error' => 'Key is required'], 400);
         }
         // Upsert
-        $stmt = $db->prepare('SELECT id FROM tnsatbeltnd_settings WHERE setting_key = ?');
+        $stmt = $db->prepare('SELECT id FROM tnsat_settings WHERE setting_key = ?');
         $stmt->execute([$key]);
         if ($stmt->fetch()) {
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_settings SET setting_value = ? WHERE setting_key = ?');
+            $stmt = $db->prepare('UPDATE tnsat_settings SET setting_value = ? WHERE setting_key = ?');
             $stmt->execute([$value, $key]);
         } else {
             $id = bin2hex(random_bytes(16));
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_settings (id, setting_key, setting_value) VALUES (?, ?, ?)');
+            $stmt = $db->prepare('INSERT INTO tnsat_settings (id, setting_key, setting_value) VALUES (?, ?, ?)');
             $stmt->execute([$id, $key, $value]);
         }
         jsonResponse(['success' => true, 'key' => $key, 'value' => $value]);

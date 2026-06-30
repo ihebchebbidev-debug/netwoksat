@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Services API (MySQL) — with image upload, specifications, features & category support
  * Uses price_credits (DECIMAL) instead of price_points (INT)
@@ -29,7 +29,7 @@ switch ($method) {
     case 'GET':
         $db = getDB();
         if ($id) {
-            $stmt = $db->prepare('SELECT s.*, dt.name as delivery_type_name FROM tnsatbeltnd_services s LEFT JOIN tnsatbeltnd_delivery_types dt ON s.delivery_type_id = dt.id WHERE s.id = ?');
+            $stmt = $db->prepare('SELECT s.*, dt.name as delivery_type_name FROM tnsat_services s LEFT JOIN tnsat_delivery_types dt ON s.delivery_type_id = dt.id WHERE s.id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             if (!$row) jsonResponse(['error' => 'Not found'], 404);
@@ -44,7 +44,7 @@ switch ($method) {
                 $where = ' WHERE s.category = ?';
                 $params[] = $category;
             }
-            $stmt = $db->prepare("SELECT s.*, dt.name as delivery_type_name FROM tnsatbeltnd_services s LEFT JOIN tnsatbeltnd_delivery_types dt ON s.delivery_type_id = dt.id{$where} ORDER BY s.created_at DESC");
+            $stmt = $db->prepare("SELECT s.*, dt.name as delivery_type_name FROM tnsat_services s LEFT JOIN tnsat_delivery_types dt ON s.delivery_type_id = dt.id{$where} ORDER BY s.created_at DESC");
             $stmt->execute($params);
             $rows = $stmt->fetchAll();
 
@@ -53,22 +53,22 @@ switch ($method) {
             $visibilityList = [];
             $hiddenCategoryNames = [];
             if ($resellerId) {
-                $ostmt = $db->prepare('SELECT service_id, price_credits FROM tnsatbeltnd_reseller_service_prices WHERE reseller_id = ?');
+                $ostmt = $db->prepare('SELECT service_id, price_credits FROM tnsat_reseller_service_prices WHERE reseller_id = ?');
                 $ostmt->execute([$resellerId]);
                 foreach ($ostmt->fetchAll() as $o) {
                     $overrides[$o['service_id']] = floatval($o['price_credits']);
                 }
-                $vstmt = $db->prepare('SELECT service_id FROM tnsatbeltnd_reseller_service_visibility WHERE reseller_id = ?');
+                $vstmt = $db->prepare('SELECT service_id FROM tnsat_reseller_service_visibility WHERE reseller_id = ?');
                 $vstmt->execute([$resellerId]);
                 foreach ($vstmt->fetchAll(PDO::FETCH_COLUMN) as $sid) {
                     $visibilityList[$sid] = true;
                 }
 
                 // Compute hidden categories for this reseller
-                $cstmt = $db->query('SELECT id, name, COALESCE(visibility_mode, "all") AS visibility_mode FROM tnsatbeltnd_categories');
+                $cstmt = $db->query('SELECT id, name, COALESCE(visibility_mode, "all") AS visibility_mode FROM tnsat_categories');
                 $cats = $cstmt->fetchAll();
                 $catListed = [];
-                $clstmt = $db->prepare('SELECT category_id FROM tnsatbeltnd_reseller_category_visibility WHERE reseller_id = ?');
+                $clstmt = $db->prepare('SELECT category_id FROM tnsat_reseller_category_visibility WHERE reseller_id = ?');
                 $clstmt->execute([$resellerId]);
                 foreach ($clstmt->fetchAll(PDO::FETCH_COLUMN) as $cid) {
                     $catListed[$cid] = true;
@@ -78,6 +78,13 @@ switch ($method) {
                     $isL = isset($catListed[$c['id']]);
                     $hidden = ($m === 'whitelist' && !$isL) || ($m === 'blacklist' && $isL);
                     if ($hidden) $hiddenCategoryNames[$c['name']] = true;
+                }
+
+                // Pre-fetch actual available key counts from product_keys table (single query)
+                $availableKeyCounts = [];
+                $kstmt = $db->query('SELECT service_id, COUNT(*) as cnt FROM tnsat_product_keys WHERE status = "available" GROUP BY service_id');
+                foreach ($kstmt->fetchAll() as $kc) {
+                    $availableKeyCounts[$kc['service_id']] = intval($kc['cnt']);
                 }
             }
 
@@ -90,8 +97,8 @@ switch ($method) {
                     if ($mode === 'whitelist' && !$listed) continue;
                     if ($mode === 'blacklist' && $listed) continue;
                     if ($r['category'] && isset($hiddenCategoryNames[$r['category']])) continue;
-                    // Hide stock-type services with no available stock from resellers
-                    if (($r['sale_type'] ?? 'command') === 'stock' && ($r['stock'] === null || intval($r['stock']) <= 0)) continue;
+                    // Hide stock-type services only when there are truly no available keys
+                    if (($r['sale_type'] ?? 'command') === 'stock' && ($availableKeyCounts[$r['id']] ?? 0) <= 0) continue;
                     $r['default_price_credits'] = $r['price_credits'];
                     if (array_key_exists($r['id'], $overrides)) {
                         $r['price_credits'] = $overrides[$r['id']];
@@ -154,7 +161,7 @@ switch ($method) {
         
         if (!$name) jsonResponse(['error' => 'Name is required'], 400);
         
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_services (id, name, description, image_url, price_tnd, price_credits, stock, delivery_type_id, category, specifications, features, sale_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_services (id, name, description, image_url, price_tnd, price_credits, stock, delivery_type_id, category, specifications, features, sale_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$id, $name, $description, $imageUrl, $priceCredits, $priceCredits, $stock, $deliveryTypeId ?: null, $category, $specifications, $features, $saleType]);
         
         jsonResponse(['id' => $id, 'name' => $name, 'image_url' => $imageUrl], 201);
@@ -185,7 +192,7 @@ switch ($method) {
             
             $imageUrl = getUploadUrl($filename);
             
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_services SET name=?, description=?, image_url=?, price_tnd=?, price_credits=?, stock=?, delivery_type_id=?, category=?, specifications=?, features=?, sale_type=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE tnsat_services SET name=?, description=?, image_url=?, price_tnd=?, price_credits=?, stock=?, delivery_type_id=?, category=?, specifications=?, features=?, sale_type=? WHERE id=?');
             $stmt->execute([$name, $description, $imageUrl, $priceCredits, $priceCredits, $stock, $deliveryTypeId ?: null, $category, $specifications, $features, $saleType, $id]);
         } else {
             $body = getRequestBody();
@@ -195,7 +202,7 @@ switch ($method) {
             $saleType = normalizeSaleType($body['sale_type'] ?? 'command');
             $priceCredits = floatval($body['price_credits'] ?? 0);
             
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_services SET name=?, description=?, image_url=?, price_tnd=?, price_credits=?, stock=?, delivery_type_id=?, category=?, specifications=?, features=?, sale_type=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE tnsat_services SET name=?, description=?, image_url=?, price_tnd=?, price_credits=?, stock=?, delivery_type_id=?, category=?, specifications=?, features=?, sale_type=? WHERE id=?');
             $stmt->execute([
                 trim($body['name'] ?? ''),
                 trim($body['description'] ?? ''),
@@ -218,7 +225,7 @@ switch ($method) {
     case 'DELETE':
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_services WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_services WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;

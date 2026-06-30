@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Order Responses API (MySQL)
  * Resellers/clients respond to fulfilled orders with their info
@@ -20,9 +20,9 @@ switch ($method) {
                 SELECT r.*, 
                        res.name as reseller_name, 
                        c.name as client_name
-                FROM tnsatbeltnd_order_responses r
-                LEFT JOIN tnsatbeltnd_resellers res ON r.reseller_id = res.id
-                LEFT JOIN tnsatbeltnd_clients c ON r.client_id = c.id
+                FROM tnsat_order_responses r
+                LEFT JOIN tnsat_resellers res ON r.reseller_id = res.id
+                LEFT JOIN tnsat_clients c ON r.client_id = c.id
                 WHERE r.order_id = ?
                 ORDER BY r.created_at DESC
             ');
@@ -46,7 +46,7 @@ switch ($method) {
         $where = !empty($conditions) ? ' WHERE ' . implode(' AND ', $conditions) : '';
 
         if ($page !== null) {
-            $countStmt = $db->prepare("SELECT COUNT(*) FROM tnsatbeltnd_order_responses r {$where}");
+            $countStmt = $db->prepare("SELECT COUNT(*) FROM tnsat_order_responses r {$where}");
             $countStmt->execute($params);
             $total = intval($countStmt->fetchColumn());
 
@@ -60,11 +60,11 @@ switch ($method) {
                        o.status as order_status,
                        o.credits_used,
                        o.note as order_note
-                FROM tnsatbeltnd_order_responses r
-                LEFT JOIN tnsatbeltnd_resellers res ON r.reseller_id = res.id
-                LEFT JOIN tnsatbeltnd_clients c ON r.client_id = c.id
-                LEFT JOIN tnsatbeltnd_orders o ON r.order_id = o.id
-                LEFT JOIN tnsatbeltnd_services s ON o.service_id = s.id
+                FROM tnsat_order_responses r
+                LEFT JOIN tnsat_resellers res ON r.reseller_id = res.id
+                LEFT JOIN tnsat_clients c ON r.client_id = c.id
+                LEFT JOIN tnsat_orders o ON r.order_id = o.id
+                LEFT JOIN tnsat_services s ON o.service_id = s.id
                 {$where}
                 ORDER BY r.created_at DESC
                 LIMIT {$limit} OFFSET {$offset}
@@ -85,11 +85,11 @@ switch ($method) {
                        o.status as order_status,
                        o.credits_used,
                        o.note as order_note
-                FROM tnsatbeltnd_order_responses r
-                LEFT JOIN tnsatbeltnd_resellers res ON r.reseller_id = res.id
-                LEFT JOIN tnsatbeltnd_clients c ON r.client_id = c.id
-                LEFT JOIN tnsatbeltnd_orders o ON r.order_id = o.id
-                LEFT JOIN tnsatbeltnd_services s ON o.service_id = s.id
+                FROM tnsat_order_responses r
+                LEFT JOIN tnsat_resellers res ON r.reseller_id = res.id
+                LEFT JOIN tnsat_clients c ON r.client_id = c.id
+                LEFT JOIN tnsat_orders o ON r.order_id = o.id
+                LEFT JOIN tnsat_services s ON o.service_id = s.id
                 {$where}
                 ORDER BY r.created_at DESC
             ");
@@ -119,17 +119,17 @@ switch ($method) {
         $db = getDB();
 
         // Verify the order exists
-        $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_orders WHERE id = ?');
+        $stmt = $db->prepare('SELECT * FROM tnsat_orders WHERE id = ?');
         $stmt->execute([$orderIdBody]);
         $order = $stmt->fetch();
         if (!$order) jsonResponse(['error' => 'Order not found'], 404);
 
         // Create response
         $responseId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_order_responses (id, order_id, reseller_id, client_id, response_text) VALUES (?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_order_responses (id, order_id, reseller_id, client_id, response_text) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([$responseId, $orderIdBody, $resellerId, $clientId, $responseText]);
 
-        $stmt = $db->prepare('SELECT name FROM tnsatbeltnd_services WHERE id = ?');
+        $stmt = $db->prepare('SELECT name FROM tnsat_services WHERE id = ?');
         $stmt->execute([$order['service_id']]);
         $service = $stmt->fetch();
         $serviceName = $service ? $service['name'] : '';
@@ -141,26 +141,26 @@ switch ($method) {
 
             $notifMessage = 'Admin a approuvé votre commande "' . $serviceName . '" / Admin approved your order "' . $serviceName . '"';
             $notifId = bin2hex(random_bytes(16));
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, 0)');
+            $stmt = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, 0)');
             $stmt->execute([$notifId, $targetClientId, $targetResellerId, 'order_approved', $notifMessage, $orderIdBody]);
         } else {
             // Reseller/client responded → notify admin
             $notifId = bin2hex(random_bytes(16));
             $buyerName = '';
             if ($resellerId) {
-                $stmt = $db->prepare('SELECT name FROM tnsatbeltnd_resellers WHERE id = ?');
+                $stmt = $db->prepare('SELECT name FROM tnsat_resellers WHERE id = ?');
                 $stmt->execute([$resellerId]);
                 $r = $stmt->fetch();
                 $buyerName = $r ? $r['name'] : 'Reseller';
             } elseif ($clientId) {
-                $stmt = $db->prepare('SELECT name FROM tnsatbeltnd_clients WHERE id = ?');
+                $stmt = $db->prepare('SELECT name FROM tnsat_clients WHERE id = ?');
                 $stmt->execute([$clientId]);
                 $c = $stmt->fetch();
                 $buyerName = $c ? $c['name'] : 'Client';
             }
 
             $notifMessage = $buyerName . ' a répondu à la commande "' . $serviceName . '" / ' . $buyerName . ' responded to order "' . $serviceName . '"';
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, NULL, NULL, ?, ?, ?, 0)');
+            $stmt = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, NULL, NULL, ?, ?, ?, 0)');
             $stmt->execute([$notifId, 'order_response', $notifMessage, $orderIdBody]);
         }
 
@@ -177,15 +177,15 @@ switch ($method) {
         // Load the response + linked order so we can notify the reseller/client
         $stmt = $db->prepare('
             SELECT r.*, o.reseller_id AS order_reseller_id, o.client_id AS order_client_id, o.service_id AS order_service_id
-            FROM tnsatbeltnd_order_responses r
-            LEFT JOIN tnsatbeltnd_orders o ON r.order_id = o.id
+            FROM tnsat_order_responses r
+            LEFT JOIN tnsat_orders o ON r.order_id = o.id
             WHERE r.id = ?
         ');
         $stmt->execute([$id]);
         $existing = $stmt->fetch();
         if (!$existing) jsonResponse(['error' => 'Response not found'], 404);
 
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_order_responses SET response_text = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_order_responses SET response_text = ? WHERE id = ?');
         $stmt->execute([$responseText, $id]);
 
         // If this was an admin response (no reseller_id and no client_id on the response itself),
@@ -194,14 +194,14 @@ switch ($method) {
         if ($isAdminResponse) {
             $serviceName = '';
             if (!empty($existing['order_service_id'])) {
-                $s = $db->prepare('SELECT name FROM tnsatbeltnd_services WHERE id = ?');
+                $s = $db->prepare('SELECT name FROM tnsat_services WHERE id = ?');
                 $s->execute([$existing['order_service_id']]);
                 $svc = $s->fetch();
                 $serviceName = $svc ? $svc['name'] : '';
             }
             $notifMessage = 'Admin a modifié la réponse de la commande "' . $serviceName . '" / Admin updated the response on order "' . $serviceName . '"';
             $notifId = bin2hex(random_bytes(16));
-            $stmt = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, 0)');
+            $stmt = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, 0)');
             $stmt->execute([
                 $notifId,
                 $existing['order_client_id'],
@@ -219,7 +219,7 @@ switch ($method) {
     case 'DELETE':
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_order_responses WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_order_responses WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Product Keys API (MySQL)
  * Manages stock of keys/codes per service
@@ -32,11 +32,11 @@ if ($method === 'GET') {
                 COALESCE(o.client_id, '') as buyer_client_id,
                 COALESCE(o.reseller_id, '') as buyer_reseller_id,
                 COALESCE(c.name, r.name, '') as buyer_name
-                FROM tnsatbeltnd_product_keys pk
-                LEFT JOIN tnsatbeltnd_services s ON pk.service_id = s.id
-                LEFT JOIN tnsatbeltnd_orders o ON pk.order_id = o.id
-                LEFT JOIN tnsatbeltnd_clients c ON o.client_id = c.id
-                LEFT JOIN tnsatbeltnd_resellers r ON o.reseller_id = r.id
+                FROM tnsat_product_keys pk
+                LEFT JOIN tnsat_services s ON pk.service_id = s.id
+                LEFT JOIN tnsat_orders o ON pk.order_id = o.id
+                LEFT JOIN tnsat_clients c ON o.client_id = c.id
+                LEFT JOIN tnsat_resellers r ON o.reseller_id = r.id
                 WHERE pk.status = 'assigned'";
         $params = [];
 
@@ -99,7 +99,7 @@ if ($method === 'GET') {
     }
 
     if ($id) {
-        $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_product_keys WHERE id = ?');
+        $stmt = $db->prepare('SELECT * FROM tnsat_product_keys WHERE id = ?');
         $stmt->execute([$id]);
         $key = $stmt->fetch();
         if (!$key) jsonResponse(['error' => 'Key not found'], 404);
@@ -113,7 +113,7 @@ if ($method === 'GET') {
             COALESCE(SUM(CASE WHEN status = "available" THEN 1 ELSE 0 END), 0) as available,
             COALESCE(SUM(CASE WHEN status = "assigned" THEN 1 ELSE 0 END), 0) as assigned,
             COUNT(*) as total
-            FROM tnsatbeltnd_product_keys GROUP BY service_id');
+            FROM tnsat_product_keys GROUP BY service_id');
         $rows = $stmt->fetchAll();
         $result = [];
         foreach ($rows as $r) {
@@ -135,7 +135,7 @@ if ($method === 'GET') {
             COUNT(*) as total,
             COALESCE(SUM(CASE WHEN status = "available" THEN 1 ELSE 0 END), 0) as available,
             COALESCE(SUM(CASE WHEN status = "assigned" THEN 1 ELSE 0 END), 0) as assigned
-            FROM tnsatbeltnd_product_keys WHERE service_id = ?');
+            FROM tnsat_product_keys WHERE service_id = ?');
         $stmt->execute([$serviceId]);
         $row = $stmt->fetch();
         jsonResponse([
@@ -146,7 +146,7 @@ if ($method === 'GET') {
     }
 
     $status = $_GET['status'] ?? null;
-    $sql = 'SELECT * FROM tnsatbeltnd_product_keys WHERE service_id = ?';
+    $sql = 'SELECT * FROM tnsat_product_keys WHERE service_id = ?';
     $params = [$serviceId];
     if ($status) {
         $sql .= ' AND status = ?';
@@ -179,7 +179,7 @@ if ($method === 'POST') {
         $db->beginTransaction();
         try {
             // Lock and pick first available key
-            $stmt = $db->prepare('SELECT id, fields FROM tnsatbeltnd_product_keys WHERE service_id = ? AND status = "available" ORDER BY created_at ASC LIMIT 1 FOR UPDATE');
+            $stmt = $db->prepare('SELECT id, fields FROM tnsat_product_keys WHERE service_id = ? AND status = "available" ORDER BY created_at ASC LIMIT 1 FOR UPDATE');
             $stmt->execute([$serviceId]);
             $key = $stmt->fetch();
 
@@ -188,11 +188,11 @@ if ($method === 'POST') {
                 jsonResponse(['error' => 'No available keys for this product', 'no_stock' => true], 404);
             }
 
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_product_keys SET status = "assigned", order_id = ?, assigned_at = NOW() WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_product_keys SET status = "assigned", order_id = ?, assigned_at = NOW() WHERE id = ?');
             $stmt->execute([$orderId, $key['id']]);
 
             // Check remaining stock — notify admin if zero
-            $stmtCount = $db->prepare('SELECT COUNT(*) as remaining FROM tnsatbeltnd_product_keys WHERE service_id = ? AND status = "available"');
+            $stmtCount = $db->prepare('SELECT COUNT(*) as remaining FROM tnsat_product_keys WHERE service_id = ? AND status = "available"');
             $stmtCount->execute([$serviceId]);
             $remaining = intval($stmtCount->fetch()['remaining']);
 
@@ -201,13 +201,13 @@ if ($method === 'POST') {
             // If stock is now zero, create an admin notification
             if ($remaining === 0) {
                 try {
-                    $stmtSvc = $db->prepare('SELECT name FROM tnsatbeltnd_services WHERE id = ?');
+                    $stmtSvc = $db->prepare('SELECT name FROM tnsat_services WHERE id = ?');
                     $stmtSvc->execute([$serviceId]);
                     $svcRow = $stmtSvc->fetch();
                     $svcName = $svcRow ? $svcRow['name'] : $serviceId;
                     // Insert notification visible to admin (no client_id or reseller_id = admin notification)
                     $notifId = bin2hex(random_bytes(16));
-                    $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, type, message, created_at) VALUES (?, ?, ?, NOW())')
+                    $db->prepare('INSERT INTO tnsat_notifications (id, type, message, created_at) VALUES (?, ?, ?, NOW())')
                         ->execute([$notifId, 'stock_empty', "⚠️ Stock épuisé pour le produit \"$svcName\". Ajoutez de nouvelles clés."]);
                 } catch (Exception $ignore) {}
             }
@@ -231,7 +231,7 @@ if ($method === 'POST') {
     }
 
     // Verify service exists
-    $stmt = $db->prepare('SELECT id FROM tnsatbeltnd_services WHERE id = ?');
+    $stmt = $db->prepare('SELECT id FROM tnsat_services WHERE id = ?');
     $stmt->execute([$serviceId]);
     if (!$stmt->fetch()) {
         jsonResponse(['error' => 'Service not found'], 404);
@@ -264,7 +264,7 @@ if ($method === 'POST') {
         unset($f);
 
         $id = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_product_keys (id, service_id, fields) VALUES (?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_product_keys (id, service_id, fields) VALUES (?, ?, ?)');
         $stmt->execute([$id, $serviceId, json_encode($fields)]);
         $inserted[] = ['id' => $id, 'fields' => $fields];
     }
@@ -283,7 +283,7 @@ if ($method === 'PUT') {
     // Update reseller note (free text, max 2000 chars)
     if ($action === 'update_note') {
         $note = isset($body['note']) ? trim(substr((string)$body['note'], 0, 2000)) : '';
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_product_keys SET reseller_note = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_product_keys SET reseller_note = ? WHERE id = ?');
         $stmt->execute([$note === '' ? null : $note, $id]);
         jsonResponse(['success' => true]);
     }
@@ -303,7 +303,7 @@ if ($method === 'PUT') {
     }
     unset($f);
 
-    $stmt = $db->prepare('UPDATE tnsatbeltnd_product_keys SET fields = ? WHERE id = ?');
+    $stmt = $db->prepare('UPDATE tnsat_product_keys SET fields = ? WHERE id = ?');
     $stmt->execute([json_encode($fields), $id]);
 
     jsonResponse(['success' => true]);
@@ -319,7 +319,7 @@ if ($method === 'DELETE') {
         if (empty($ids)) jsonResponse(['error' => 'ids array required'], 400);
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $db->prepare("DELETE FROM tnsatbeltnd_product_keys WHERE id IN ($placeholders) AND status = 'available'");
+        $stmt = $db->prepare("DELETE FROM tnsat_product_keys WHERE id IN ($placeholders) AND status = 'available'");
         $stmt->execute($ids);
         jsonResponse(['success' => true, 'deleted' => $stmt->rowCount()]);
     }
@@ -327,12 +327,15 @@ if ($method === 'DELETE') {
     $id = $_GET['id'] ?? null;
     if (!$id) jsonResponse(['error' => 'id required'], 400);
 
-    $stmt = $db->prepare('DELETE FROM tnsatbeltnd_product_keys WHERE id = ?');
-    $stmt->execute([$id]);
+    $check = $db->prepare('SELECT status FROM tnsat_product_keys WHERE id = ?');
+    $check->execute([$id]);
+    $key = $check->fetch(PDO::FETCH_ASSOC);
 
-    if ($stmt->rowCount() === 0) {
-        jsonResponse(['error' => 'Key not found'], 404);
-    }
+    if (!$key) jsonResponse(['error' => 'Key not found'], 404);
+    if ($key['status'] === 'assigned') jsonResponse(['error' => 'Cannot delete an assigned key'], 409);
+
+    $stmt = $db->prepare('DELETE FROM tnsat_product_keys WHERE id = ?');
+    $stmt->execute([$id]);
 
     jsonResponse(['success' => true]);
 }

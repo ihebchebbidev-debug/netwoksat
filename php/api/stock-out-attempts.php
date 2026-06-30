@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Stock Out Attempts API (admin)
  * GET /stock-out-attempts.php
@@ -36,10 +36,10 @@ if ($to)   { $conds[] = 'a.created_at <= ?'; $params[] = $to . ' 23:59:59'; }
 $where = $conds ? ' WHERE ' . implode(' AND ', $conds) : '';
 
 $baseFrom = '
-    FROM tnsatbeltnd_stock_out_attempts a
-    LEFT JOIN tnsatbeltnd_services s  ON a.service_id  = s.id
-    LEFT JOIN tnsatbeltnd_clients c   ON a.client_id   = c.id
-    LEFT JOIN tnsatbeltnd_resellers r ON a.reseller_id = r.id
+    FROM tnsat_stock_out_attempts a
+    LEFT JOIN tnsat_services s  ON a.service_id  = s.id
+    LEFT JOIN tnsat_clients c   ON a.client_id   = c.id
+    LEFT JOIN tnsat_resellers r ON a.reseller_id = r.id
 ';
 
 $countStmt = $db->prepare("SELECT COUNT(*) {$baseFrom}{$where}");

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Per-service visibility (admin)
  *
@@ -20,14 +20,14 @@ switch ($method) {
         if (!$serviceId) jsonResponse(['error' => 'service_id required'], 400);
         $db = getDB();
 
-        $stmt = $db->prepare('SELECT visibility_mode FROM tnsatbeltnd_services WHERE id = ?');
+        $stmt = $db->prepare('SELECT visibility_mode FROM tnsat_services WHERE id = ?');
         $stmt->execute([$serviceId]);
         $svc = $stmt->fetch();
         if (!$svc) jsonResponse(['error' => 'Service not found'], 404);
 
         $stmt = $db->prepare('SELECT v.reseller_id, r.name, r.email
-                              FROM tnsatbeltnd_reseller_service_visibility v
-                              JOIN tnsatbeltnd_resellers r ON r.id = v.reseller_id
+                              FROM tnsat_reseller_service_visibility v
+                              JOIN tnsat_resellers r ON r.id = v.reseller_id
                               WHERE v.service_id = ?
                               ORDER BY r.name ASC');
         $stmt->execute([$serviceId]);
@@ -53,15 +53,15 @@ switch ($method) {
         $db = getDB();
         $db->beginTransaction();
         try {
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_services SET visibility_mode = ? WHERE id = ?');
+            $stmt = $db->prepare('UPDATE tnsat_services SET visibility_mode = ? WHERE id = ?');
             $stmt->execute([$mode, $serviceId]);
 
             // Replace the list
-            $del = $db->prepare('DELETE FROM tnsatbeltnd_reseller_service_visibility WHERE service_id = ?');
+            $del = $db->prepare('DELETE FROM tnsat_reseller_service_visibility WHERE service_id = ?');
             $del->execute([$serviceId]);
 
             if ($mode !== 'all' && count($resellerIds) > 0) {
-                $ins = $db->prepare('INSERT IGNORE INTO tnsatbeltnd_reseller_service_visibility (service_id, reseller_id) VALUES (?, ?)');
+                $ins = $db->prepare('INSERT IGNORE INTO tnsat_reseller_service_visibility (service_id, reseller_id) VALUES (?, ?)');
                 foreach ($resellerIds as $rid) {
                     if (is_string($rid) && $rid !== '') $ins->execute([$serviceId, $rid]);
                 }

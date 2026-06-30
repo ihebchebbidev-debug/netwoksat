@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Global Messages API (MySQL)
  *
@@ -31,7 +31,7 @@ switch ($method) {
 
         // Reseller-facing: list of all active messages (always shown until admin removes)
         if (isset($_GET['active'])) {
-            $stmt = $db->query("SELECT * FROM tnsatbeltnd_global_messages WHERE is_active = 1 ORDER BY created_at DESC");
+            $stmt = $db->query("SELECT * FROM tnsat_global_messages WHERE is_active = 1 ORDER BY created_at DESC");
             jsonResponse($stmt->fetchAll());
         }
 
@@ -39,10 +39,10 @@ switch ($method) {
         if ($resellerId && $unread) {
             $stmt = $db->prepare("
                 SELECT m.*
-                FROM tnsatbeltnd_global_messages m
+                FROM tnsat_global_messages m
                 WHERE m.is_active = 1
                   AND NOT EXISTS (
-                    SELECT 1 FROM tnsatbeltnd_global_message_reads r
+                    SELECT 1 FROM tnsat_global_message_reads r
                     WHERE r.message_id = m.id AND r.reseller_id = ?
                   )
                 ORDER BY m.created_at DESC
@@ -53,7 +53,7 @@ switch ($method) {
 
         // Single message — admin view with reads
         if ($id) {
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_global_messages WHERE id = ?');
+            $stmt = $db->prepare('SELECT * FROM tnsat_global_messages WHERE id = ?');
             $stmt->execute([$id]);
             $msg = $stmt->fetch();
             if (!$msg) jsonResponse(['error' => 'Not found'], 404);
@@ -61,8 +61,8 @@ switch ($method) {
             // Reads with reseller info
             $reads = $db->prepare("
                 SELECT r.id, r.reseller_id, r.read_at, res.name AS reseller_name, res.email AS reseller_email
-                FROM tnsatbeltnd_global_message_reads r
-                LEFT JOIN tnsatbeltnd_resellers res ON res.id = r.reseller_id
+                FROM tnsat_global_message_reads r
+                LEFT JOIN tnsat_resellers res ON res.id = r.reseller_id
                 WHERE r.message_id = ?
                 ORDER BY r.read_at DESC
             ");
@@ -72,10 +72,10 @@ switch ($method) {
             // Resellers who haven't read (active resellers only)
             $unreadStmt = $db->prepare("
                 SELECT res.id AS reseller_id, res.name AS reseller_name, res.email AS reseller_email
-                FROM tnsatbeltnd_resellers res
+                FROM tnsat_resellers res
                 WHERE res.is_active = 1
                   AND NOT EXISTS (
-                    SELECT 1 FROM tnsatbeltnd_global_message_reads r
+                    SELECT 1 FROM tnsat_global_message_reads r
                     WHERE r.message_id = ? AND r.reseller_id = res.id
                   )
                 ORDER BY res.name ASC
@@ -89,9 +89,9 @@ switch ($method) {
         // Admin list — all messages with simple read counts
         $stmt = $db->query("
             SELECT m.*,
-                   (SELECT COUNT(*) FROM tnsatbeltnd_global_message_reads r WHERE r.message_id = m.id) AS read_count,
-                   (SELECT COUNT(*) FROM tnsatbeltnd_resellers WHERE is_active = 1) AS total_resellers
-            FROM tnsatbeltnd_global_messages m
+                   (SELECT COUNT(*) FROM tnsat_global_message_reads r WHERE r.message_id = m.id) AS read_count,
+                   (SELECT COUNT(*) FROM tnsat_resellers WHERE is_active = 1) AS total_resellers
+            FROM tnsat_global_messages m
             ORDER BY m.created_at DESC
         ");
         jsonResponse($stmt->fetchAll());
@@ -109,7 +109,7 @@ switch ($method) {
 
         $db = getDB();
         $newId = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_global_messages (id, title, message, image_url, is_active) VALUES (?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_global_messages (id, title, message, image_url, is_active) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([$newId, $title, $message, $imageUrl, $isActive]);
         jsonResponse(['id' => $newId, 'success' => true], 201);
         break;
@@ -125,14 +125,14 @@ switch ($method) {
             if (!$rid) jsonResponse(['error' => 'reseller_id required'], 400);
 
             // Confirm message exists
-            $check = $db->prepare('SELECT id FROM tnsatbeltnd_global_messages WHERE id = ?');
+            $check = $db->prepare('SELECT id FROM tnsat_global_messages WHERE id = ?');
             $check->execute([$id]);
             if (!$check->fetch()) jsonResponse(['error' => 'Message not found'], 404);
 
             // Insert ignore duplicate
             $readId = bin2hex(random_bytes(16));
             try {
-                $stmt = $db->prepare('INSERT INTO tnsatbeltnd_global_message_reads (id, message_id, reseller_id) VALUES (?, ?, ?)');
+                $stmt = $db->prepare('INSERT INTO tnsat_global_message_reads (id, message_id, reseller_id) VALUES (?, ?, ?)');
                 $stmt->execute([$readId, $id, $rid]);
             } catch (PDOException $e) {
                 // duplicate (already read) — ignore
@@ -154,7 +154,7 @@ switch ($method) {
         if (!$fields) jsonResponse(['error' => 'No fields to update'], 400);
 
         $params[] = $id;
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_global_messages SET ' . implode(', ', $fields) . ' WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_global_messages SET ' . implode(', ', $fields) . ' WHERE id = ?');
         $stmt->execute($params);
         jsonResponse(['success' => true]);
         break;
@@ -163,7 +163,7 @@ switch ($method) {
     case 'DELETE': {
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_global_messages WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_global_messages WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;

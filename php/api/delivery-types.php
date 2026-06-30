@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Delivery Types API (MySQL)
  */
@@ -12,7 +12,7 @@ switch ($method) {
     case 'GET':
         if ($id) {
             $db = getDB();
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_delivery_types WHERE id = ?');
+            $stmt = $db->prepare('SELECT * FROM tnsat_delivery_types WHERE id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             if (!$row) jsonResponse(['error' => 'Not found'], 404);
@@ -20,7 +20,7 @@ switch ($method) {
             jsonResponse($row);
         } else {
             $db = getDB();
-            $stmt = $db->query('SELECT * FROM tnsatbeltnd_delivery_types ORDER BY created_at DESC');
+            $stmt = $db->query('SELECT * FROM tnsat_delivery_types ORDER BY created_at DESC');
             $types = $stmt->fetchAll();
             foreach ($types as &$t) {
                 $t['fields'] = json_decode($t['fields'], true);
@@ -41,7 +41,7 @@ switch ($method) {
 
         $db = getDB();
         $id = bin2hex(random_bytes(16));
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_delivery_types (id, name, description, fields) VALUES (?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_delivery_types (id, name, description, fields) VALUES (?, ?, ?, ?)');
         $stmt->execute([$id, $name, $description, json_encode($fields)]);
         
         jsonResponse(['id' => $id, 'name' => $name, 'description' => $description, 'fields' => $fields], 201);
@@ -52,7 +52,7 @@ switch ($method) {
         
         $body = getRequestBody();
         $db = getDB();
-        $stmt = $db->prepare('UPDATE tnsatbeltnd_delivery_types SET name = ?, description = ?, fields = ? WHERE id = ?');
+        $stmt = $db->prepare('UPDATE tnsat_delivery_types SET name = ?, description = ?, fields = ? WHERE id = ?');
         $stmt->execute([
             trim($body['name'] ?? ''),
             trim($body['description'] ?? ''),
@@ -67,7 +67,7 @@ switch ($method) {
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_delivery_types WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_delivery_types WHERE id = ?');
         $stmt->execute([$id]);
         
         jsonResponse(['success' => true]);

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * Reset Products API (MySQL)
  * Admin manages a catalog of "resettable items" with dynamic fields.
@@ -31,7 +31,7 @@ switch ($method) {
     case 'GET': {
         $db = getDB();
         if ($id) {
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_reset_products WHERE id = ?');
+            $stmt = $db->prepare('SELECT * FROM tnsat_reset_products WHERE id = ?');
             $stmt->execute([$id]);
             $row = $stmt->fetch();
             if (!$row) jsonResponse(['error' => 'Not found'], 404);
@@ -44,7 +44,7 @@ switch ($method) {
             $where = ' WHERE is_active = ?';
             $params[] = intval($_GET['active']) ? 1 : 0;
         }
-        $stmt = $db->prepare("SELECT * FROM tnsatbeltnd_reset_products{$where} ORDER BY sort_order ASC, created_at DESC");
+        $stmt = $db->prepare("SELECT * FROM tnsat_reset_products{$where} ORDER BY sort_order ASC, created_at DESC");
         $stmt->execute($params);
         $rows = $stmt->fetchAll();
         foreach ($rows as &$r) parseResetProductRow($r);
@@ -64,7 +64,7 @@ switch ($method) {
             if (!$resellerId && !$clientId) jsonResponse(['error' => 'reseller_id or client_id required'], 400);
 
             $db = getDB();
-            $stmt = $db->prepare('SELECT * FROM tnsatbeltnd_reset_products WHERE id = ?');
+            $stmt = $db->prepare('SELECT * FROM tnsat_reset_products WHERE id = ?');
             $stmt->execute([$resetProductId]);
             $product = $stmt->fetch();
             if (!$product) jsonResponse(['error' => 'Reset product not found'], 404);
@@ -72,12 +72,12 @@ switch ($method) {
             // Resolve reseller/client name for the message
             $name = '';
             if ($resellerId) {
-                $st = $db->prepare('SELECT name FROM tnsatbeltnd_resellers WHERE id = ?');
+                $st = $db->prepare('SELECT name FROM tnsat_resellers WHERE id = ?');
                 $st->execute([$resellerId]);
                 $r = $st->fetch();
                 $name = $r ? $r['name'] : 'Reseller';
             } elseif ($clientId) {
-                $st = $db->prepare('SELECT name FROM tnsatbeltnd_clients WHERE id = ?');
+                $st = $db->prepare('SELECT name FROM tnsat_clients WHERE id = ?');
                 $st->execute([$clientId]);
                 $r = $st->fetch();
                 $name = $r ? $r['name'] : 'Client';
@@ -105,7 +105,7 @@ switch ($method) {
 
             // Create admin notification (no client_id / reseller_id => admin queue)
             $notifId = bin2hex(random_bytes(16));
-            $ins = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, NULL, NULL, ?, ?, NULL, 0)');
+            $ins = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, order_id, is_read) VALUES (?, NULL, NULL, ?, ?, NULL, 0)');
             $ins->execute([$notifId, 'reset_request', $message]);
 
             // Mirror notification on the reseller/client side so they have an immediate trace
@@ -117,7 +117,7 @@ switch ($method) {
                 . ($details ? "\n" . $details : '')
                 . "\n[CID:{$cid}]";
             $note = isset($body['note']) ? trim(substr((string)$body['note'], 0, 2000)) : '';
-            $insMirror = $db->prepare('INSERT INTO tnsatbeltnd_notifications (id, client_id, reseller_id, type, message, reseller_note, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, NULL, 1)');
+            $insMirror = $db->prepare('INSERT INTO tnsat_notifications (id, client_id, reseller_id, type, message, reseller_note, order_id, is_read) VALUES (?, ?, ?, ?, ?, ?, NULL, 1)');
             $insMirror->execute([$mirrorId, $clientId, $resellerId, 'reset_request_sent', $mirrorMsg, $note === '' ? null : $note]);
 
             jsonResponse(['success' => true, 'notification_id' => $notifId, 'cid' => $cid], 201);
@@ -140,23 +140,23 @@ switch ($method) {
             $cidMarker = '%[CID:' . $cid . ']%';
 
             // Block edit if admin already replied
-            $stmt = $db->prepare("SELECT id FROM tnsatbeltnd_notifications WHERE type IN ('reset_approved','reset_cancelled') AND message LIKE ? LIMIT 1");
+            $stmt = $db->prepare("SELECT id FROM tnsat_notifications WHERE type IN ('reset_approved','reset_cancelled') AND message LIKE ? LIMIT 1");
             $stmt->execute([$cidMarker]);
             if ($stmt->fetch()) jsonResponse(['error' => 'Cette demande a déjà été traitée'], 409);
 
             // Find the reseller/client mirror notification for ownership check
             if ($resellerId) {
-                $stmt = $db->prepare("SELECT * FROM tnsatbeltnd_notifications WHERE type='reset_request_sent' AND reseller_id=? AND message LIKE ? LIMIT 1");
+                $stmt = $db->prepare("SELECT * FROM tnsat_notifications WHERE type='reset_request_sent' AND reseller_id=? AND message LIKE ? LIMIT 1");
                 $stmt->execute([$resellerId, $cidMarker]);
             } else {
-                $stmt = $db->prepare("SELECT * FROM tnsatbeltnd_notifications WHERE type='reset_request_sent' AND client_id=? AND message LIKE ? LIMIT 1");
+                $stmt = $db->prepare("SELECT * FROM tnsat_notifications WHERE type='reset_request_sent' AND client_id=? AND message LIKE ? LIMIT 1");
                 $stmt->execute([$clientId, $cidMarker]);
             }
             $mirror = $stmt->fetch();
             if (!$mirror) jsonResponse(['error' => 'Demande introuvable'], 404);
 
             // Find the admin-side request notification (no client/reseller id)
-            $stmt = $db->prepare("SELECT * FROM tnsatbeltnd_notifications WHERE type='reset_request' AND client_id IS NULL AND reseller_id IS NULL AND message LIKE ? LIMIT 1");
+            $stmt = $db->prepare("SELECT * FROM tnsat_notifications WHERE type='reset_request' AND client_id IS NULL AND reseller_id IS NULL AND message LIKE ? LIMIT 1");
             $stmt->execute([$cidMarker]);
             $adminNotif = $stmt->fetch();
 
@@ -174,12 +174,12 @@ switch ($method) {
             // otherwise rebuild from DB.
             $name = '';
             if ($resellerId) {
-                $st = $db->prepare('SELECT name FROM tnsatbeltnd_resellers WHERE id = ?');
+                $st = $db->prepare('SELECT name FROM tnsat_resellers WHERE id = ?');
                 $st->execute([$resellerId]);
                 $r = $st->fetch();
                 $name = $r ? $r['name'] : 'Reseller';
             } else {
-                $st = $db->prepare('SELECT name FROM tnsatbeltnd_clients WHERE id = ?');
+                $st = $db->prepare('SELECT name FROM tnsat_clients WHERE id = ?');
                 $st->execute([$clientId]);
                 $r = $st->fetch();
                 $name = $r ? $r['name'] : 'Client';
@@ -208,15 +208,15 @@ switch ($method) {
                 . "\n[CID:" . $cid . "]";
 
             if ($adminNotif) {
-                $upd = $db->prepare('UPDATE tnsatbeltnd_notifications SET message=?, is_read=0 WHERE id=?');
+                $upd = $db->prepare('UPDATE tnsat_notifications SET message=?, is_read=0 WHERE id=?');
                 $upd->execute([$newAdminMsg, $adminNotif['id']]);
             }
             if (array_key_exists('note', $body)) {
                 $note = trim(substr((string)$body['note'], 0, 2000));
-                $upd = $db->prepare('UPDATE tnsatbeltnd_notifications SET message=?, reseller_note=? WHERE id=?');
+                $upd = $db->prepare('UPDATE tnsat_notifications SET message=?, reseller_note=? WHERE id=?');
                 $upd->execute([$newMirrorMsg, $note === '' ? null : $note, $mirror['id']]);
             } else {
-                $upd = $db->prepare('UPDATE tnsatbeltnd_notifications SET message=? WHERE id=?');
+                $upd = $db->prepare('UPDATE tnsat_notifications SET message=? WHERE id=?');
                 $upd->execute([$newMirrorMsg, $mirror['id']]);
             }
 
@@ -258,7 +258,7 @@ switch ($method) {
         if (!$name) jsonResponse(['error' => 'Name is required'], 400);
         if (!is_array($fields)) $fields = [];
 
-        $stmt = $db->prepare('INSERT INTO tnsatbeltnd_reset_products (id, name, description, image_url, fields, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $db->prepare('INSERT INTO tnsat_reset_products (id, name, description, image_url, fields, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([$newId, $name, $description, $imageUrl ?? '', json_encode($fields), $sortOrder, $isActive]);
 
         jsonResponse(['id' => $newId, 'name' => $name, 'image_url' => $imageUrl ?? ''], 201);
@@ -285,7 +285,7 @@ switch ($method) {
             move_uploaded_file($file['tmp_name'], $filepath);
             $imageUrl = getUploadUrl($filename);
 
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_reset_products SET name=?, description=?, image_url=?, fields=?, sort_order=?, is_active=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE tnsat_reset_products SET name=?, description=?, image_url=?, fields=?, sort_order=?, is_active=? WHERE id=?');
             $stmt->execute([$name, $description, $imageUrl, json_encode($fields), $sortOrder, $isActive, $id]);
         } else {
             $body = getRequestBody();
@@ -297,7 +297,7 @@ switch ($method) {
             $fields = $body['fields'] ?? [];
             if (!is_array($fields)) $fields = [];
 
-            $stmt = $db->prepare('UPDATE tnsatbeltnd_reset_products SET name=?, description=?, image_url=?, fields=?, sort_order=?, is_active=? WHERE id=?');
+            $stmt = $db->prepare('UPDATE tnsat_reset_products SET name=?, description=?, image_url=?, fields=?, sort_order=?, is_active=? WHERE id=?');
             $stmt->execute([$name, $description, $imageUrl, json_encode($fields), $sortOrder, $isActive, $id]);
         }
 
@@ -308,7 +308,7 @@ switch ($method) {
     case 'DELETE': {
         if (!$id) jsonResponse(['error' => 'ID required'], 400);
         $db = getDB();
-        $stmt = $db->prepare('DELETE FROM tnsatbeltnd_reset_products WHERE id = ?');
+        $stmt = $db->prepare('DELETE FROM tnsat_reset_products WHERE id = ?');
         $stmt->execute([$id]);
         jsonResponse(['success' => true]);
         break;
